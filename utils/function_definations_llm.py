@@ -802,16 +802,28 @@ function_definitions_objects_llm = {
         "type": "function",
         "function": {
             "name": "clean_up_excel_sales_data",
-            "description": "description",
+            "description": "Cleans and processes sales data from an Excel file by standardizing city names, filtering sales, and aggregating results.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "command": {
+                    "file_path": {
                         "type": "string",
-                        "description": "The command to execute",
+                        "description": "The path to the Excel file containing sales data."
+                    },    
+                    "product_filter": {
+                        "type": "string",
+                        "description": "The product name to filter sales data (default: 'Ball')."
+                    },
+                    "min_sales": {
+                        "type": "integer",
+                        "description": "The minimum sales quantity to consider (default: 177)."
+                    },
+                    "city_filter": {
+                        "type": "string",
+                        "description": "The city for which total sales should be extracted (default: 'Delhi')."
                     }
                 },
-                "required": ["command"],
+                "required": ["file_path"],
             },
         },
     },
@@ -819,16 +831,24 @@ function_definitions_objects_llm = {
         "type": "function",
         "function": {
             "name": "clean_up_student_marks",
-            "description": "description",
+            "description": "Processes student marks data and calculates statistics dynamically based on user input.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "command": {
+                    "file_path": {
                         "type": "string",
-                        "description": "The command to execute",
-                    }
+                        "description":  "Path to the JSON file containing student marks data."
+                    },
+                    "min_marks": {
+                    "type": "number",
+                    "description": "Minimum marks threshold for filtering students."
                 },
-                "required": ["command"],
+                "subject_filter": {
+                    "type": "string",
+                    "description": "Filter students based on a specific subject."
+                }
+            },
+            "required": ["file_path", "min_marks", "subject_filter"]
             },
         },
     },
@@ -836,16 +856,43 @@ function_definitions_objects_llm = {
         "type": "function",
         "function": {
             "name": "apache_log_requests",
-            "description": "description",
+            "description": "Processes an Apache log file and counts requests based on user-defined filters.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "command": {
+                    "file_path": {
                         "type": "string",
-                        "description": "The command to execute",
-                    }
+                        "description": "Path to the Apache log file (gzipped)."
+                    },
+                    "day_of_week": {
+                    "type": "integer",
+                    "description": "Day of the week to filter requests (0=Monday, 6=Sunday)."
                 },
-                "required": ["command"],
+                "start_hour": {
+                    "type": "integer",
+                    "description": "Start of the time window (0-23)."
+                },
+                "end_hour": {
+                    "type": "integer",
+                    "description": "End of the time window (0-23)."
+                },
+                "status_range": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "description": "Range of HTTP status codes to filter, e.g., [200, 299]."
+                },
+                "method": {
+                    "type": "string",
+                    "description": "HTTP request method (e.g., GET, POST)."
+                },
+                 "url_prefix": {
+                    "type": "string",
+                    "description": "Filter requests that start with this URL prefix."
+                }
+            },
+             "required": ["file_path", "day_of_week", "start_hour", "end_hour", "status_range", "method", "url_prefix"]
             },
         },
     },
@@ -952,20 +999,39 @@ function_definitions_objects_llm = {
         },
     },
     "reconstruct_an_image": {
-        "type": "function",
-        "function": {
-            "name": "reconstruct_an_image",
-            "description": "description",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "command": {
-                        "type": "string",
-                        "description": "The command to execute",
-                    }
+    "type": "function",
+    "function": {
+        "name": "reconstruct_an_image",
+        "description": "Reconstructs an image by rearranging its grid pieces based on user-defined mapping.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "image_path": {
+                    "type": "string",
+                    "description": "Path to the input image."
                 },
-                "required": ["command"],
+                "mapping": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": { "type": "integer" }
+                    },
+                    "description": "A list of mappings in the format: [[orig_row, orig_col, src_row, src_col], ...]."
+                },
+                "grid_size": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "description": "Grid size as [rows, cols]."
+                },
+                "output_path": {
+                    "type": "string",
+                    "description": "Path to save the reconstructed image."
+                }
             },
-        },
-    },
+            "required": ["image_path", "mapping", "grid_size", "output_path"]
+        }
+    }
+},
 }
