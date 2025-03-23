@@ -402,9 +402,14 @@ def extract_tables_from_pdf():
 def convert_a_pdf_to_markdown():
     return ""
 
-def clean_up_excel_sales_data(file_path):
+def clean_up_excel_sales_data(file_path, product_filter, min_sales, city_filter):
     # Load the dataset
     df = pd.read_excel(file_path)
+
+    # Ensure necessary columns exist
+    required_columns = {"city", "product", "sales"}
+    if not required_columns.issubset(df.columns):
+        raise ValueError(f"Missing required columns: {required_columns - set(df.columns)}")
 
     # Get unique city names dynamically
     unique_cities = df["city"].unique()
@@ -416,26 +421,40 @@ def clean_up_excel_sales_data(file_path):
 
     df["city"] = df["city"].apply(standardize_city)
 
-    # Filter for "Ball" sales with at least 177 units
-    filtered_df = df[(df["product"] == "Ball") & (df["sales"] >= 177)]
+    # Filter based on the specified product and sales threshold
+    filtered_df = df[(df["product"] == product_filter) & (df["sales"] >= min_sales)]
 
     # Aggregate sales by city
     aggregated_sales = filtered_df.groupby("city")["sales"].sum().reset_index()
 
-    # Extract total sales in Delhi
-    delhi_sales = aggregated_sales.loc[aggregated_sales["city"].str.lower() == "delhi", "sales"].sum()
+    # Extract total sales for the specified city
+    city_sales = aggregated_sales.loc[aggregated_sales["city"].str.lower() == city_filter.lower(), "sales"].sum()
 
-    return {"Delhi_sales": int(delhi_sales)}
+    return {f"{city_filter}_sales": int(city_sales)}
 
-def clean_up_student_marks(file_path):
+
+def clean_up_student_marks(file_path, min_marks, subject_filter):
     # Load the JSON file
     with open(file_path, "r") as file:
         data = json.load(file)
 
-    # Extract sales values, handling missing or invalid data
-    total_sales = sum(entry.get("sales", 0) for entry in data if isinstance(entry.get("sales"), (int, float)))
+    # Filter students based on the given subject and minimum marks
+    filtered_students = [
+        entry for entry in data
+        if entry.get("subject") == subject_filter and entry.get("marks", 0) >= min_marks
+    ]
 
-    return {"total_sales": total_sales}
+    # Calculate the total and average marks for the filtered students
+    total_marks = sum(entry["marks"] for entry in filtered_students)
+    avg_marks = total_marks / len(filtered_students) if filtered_students else 0
+
+    return {
+        "subject": subject_filter,
+        "total_students": len(filtered_students),
+        "total_marks": total_marks,
+        "average_marks": avg_marks
+    }
+
 
 
 def parse_apache_log_line(line):
@@ -444,17 +463,17 @@ def parse_apache_log_line(line):
         r'(?P<ip>\S+) \S+ \S+ \[(?P<timestamp>[^\]]+)\] "(?P<method>\S+) (?P<url>\S+) \S+" (?P<status>\d+) \S+ ".*" ".*"'
     )
     match = log_pattern.match(line)
-    
+
     if not match:
         return None
-    
+
     log_data = match.groupdict()
     log_data["status"] = int(log_data["status"])
-    
+
     # Convert timestamp format
     timestamp_str = log_data["timestamp"].split()[0]  # Remove timezone
     log_data["datetime"] = datetime.strptime(timestamp_str, "%d/%b/%Y:%H:%M:%S")
-    
+
     return log_data
 
 def apache_log_requests(file_path):
@@ -466,7 +485,7 @@ def apache_log_requests(file_path):
             log_data = parse_apache_log_line(line)
             if not log_data:
                 continue
-            
+
             # Extract components
             request_time = log_data["datetime"]
             is_friday = request_time.weekday() == 4  # 4 = Friday
@@ -474,12 +493,11 @@ def apache_log_requests(file_path):
             is_successful = 200 <= log_data["status"] < 300
             is_get_request = log_data["method"] == "GET"
             is_tamilmp3_page = log_data["url"].startswith("/tamilmp3/")
-            
+
             if is_friday and is_in_time_window and is_successful and is_get_request and is_tamilmp3_page:
                 successful_requests += 1
 
     return {"successful_tamilmp3_get_requests": successful_requests}
-
 
 def apache_log_downloads():
     return ""
@@ -505,29 +523,35 @@ def transcribe_a_youtube_video():
     return ""
 
 
-def reconstruct_an_image(image_path=None, mapping=None, grid_size=(5, 5), output_path="reconstructed.png"):
-    if image_path is None or mapping is None:
-        return None  # Return None if required inputs are missing
-
+from PIL import Image
+def reconstruct_an_image(image_path, mapping, grid_size, output_path):
+    """Reconstructs an image based on user-defined mapping of grid positions."""
+    
+    # Load the image
     img = Image.open(image_path)
     width, height = img.size
+
+    # Calculate the piece width and height
     piece_width = width // grid_size[1]
     piece_height = height // grid_size[0]
 
+    # Create a blank image for reconstruction
     reconstructed = Image.new("RGB", (width, height))
 
-    for orig_row, orig_col, scr_row, scr_col in mapping:
-        left = scr_col * piece_width
-        upper = scr_row * piece_height
+    # Rearrange pieces according to mapping
+    for orig_row, orig_col, src_row, src_col in mapping:
+        left = src_col * piece_width
+        upper = src_row * piece_height
         piece = img.crop((left, upper, left + piece_width, upper + piece_height))
 
         left = orig_col * piece_width
         upper = orig_row * piece_height
         reconstructed.paste(piece, (left, upper))
 
+    # Save the reconstructed image
     reconstructed.save(output_path)
-    return output_path  # Return the output path
 
+    return {"output_path": output_path}
 
 functions_dict = {
     "vs_code_version": vs_code_version,
