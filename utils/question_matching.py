@@ -1,12 +1,16 @@
 import json
+import os
+
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 def find_similar_question(input_question):
     questions_json = {}
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(current_dir, "..", "data", "questions.json")
 
-    with open("data/questions.json", "r") as f:
+    with open(file_path, "r") as f:
         questions_json = json.load(f)
 
     question_keys = list(questions_json.keys())

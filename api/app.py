@@ -45,6 +45,7 @@ def process_file():
         else:
             print(type(parameters), parameters)
             answer = solution_function(*parameters)
+            print(answer)
         return jsonify({"answer": answer})
     except Exception as e:
         print(e,"this is the error")
