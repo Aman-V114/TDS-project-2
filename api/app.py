@@ -33,7 +33,7 @@ def redeploy():
     return "Redeployment triggered!", 200
 
 
-@app.route("/api/", methods=["POST"])
+@app.route("/", methods=["POST"])
 def process_file():
     # Get the question from the form data
     question = request.form.get("question")
